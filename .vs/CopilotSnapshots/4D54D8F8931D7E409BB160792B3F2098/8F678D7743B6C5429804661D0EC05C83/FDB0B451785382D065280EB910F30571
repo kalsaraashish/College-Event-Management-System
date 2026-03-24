@@ -1,0 +1,40 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ClgEventBackendApi.Models
+{
+    public class Event
+    {
+        [Key]
+        public int EventId { get; set; }
+
+        [Required]
+        [MaxLength(150)]
+        public string Title { get; set; }
+
+        [MaxLength(1000)]
+        public string Description { get; set; }
+
+        public DateTime EventDate { get; set; }
+
+        [MaxLength(150)]
+        public string Location { get; set; }
+
+        public int MaxParticipants { get; set; }
+
+        [MaxLength(50)]
+        public string EventType { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        // 🔹 Foreign Key
+        public int? CategoryId { get; set; }
+
+        // 🔹 Navigation
+        [ForeignKey("CategoryId")]
+        public Category? Category { get; set; }
+
+        // Navigation Properties
+        public ICollection<EventRegistration>? EventRegistrations { get; set; }
+    }
+}

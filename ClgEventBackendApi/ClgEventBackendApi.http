@@ -1,0 +1,6 @@
+@ClgEventBackendApi_HostAddress = http://localhost:5245
+
+GET {{ClgEventBackendApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

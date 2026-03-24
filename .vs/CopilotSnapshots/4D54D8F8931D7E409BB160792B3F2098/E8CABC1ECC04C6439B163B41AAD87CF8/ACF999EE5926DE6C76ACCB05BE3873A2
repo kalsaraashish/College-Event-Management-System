@@ -1,0 +1,144 @@
+﻿using ClgEventBackendApi.DTOs;
+using ClgEventBackendApi.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace ClgEventBackendApi.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AttendanceController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public AttendanceController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // ===============================
+        // POST: api/attendance
+        // Mark attendance for one student
+        // ===============================
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public async Task<IActionResult> MarkAttendance(Attendance attendance)
+        {
+            var registration = await _context.EventRegistration
+                .FindAsync(attendance.EventRegistrationId);
+
+            if (registration == null)
+                return BadRequest("Invalid Event Registration ID");
+
+            var exists = await _context.Attendances
+                .AnyAsync(a => a.EventRegistrationId == attendance.EventRegistrationId);
+
+            if (exists)
+                return BadRequest("Attendance already marked");
+
+            attendance.MarkedAt = DateTime.Now;
+
+            _context.Attendances.Add(attendance);
+            await _context.SaveChangesAsync();
+
+            return Ok(attendance);
+        }
+
+        // ===============================
+        // PUT: api/attendance/{id}
+        // Update attendance
+        // ===============================
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateAttendance(int id, Attendance attendance)
+        {
+            if (id != attendance.AttendanceId)
+                return BadRequest("Attendance ID mismatch");
+
+            var exists = await _context.Attendances
+                .AnyAsync(a => a.AttendanceId == id);
+
+            if (!exists)
+                return NotFound("Attendance record not found");
+
+            _context.Entry(attendance).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return Ok(attendance);
+        }
+
+        // ===============================
+        // GET: api/attendance/event/{eventId}
+        // Get attendance by event
+        // ===============================
+        [Authorize(Roles = "Admin")]
+        [HttpGet("event/{eventId}")]
+        public async Task<IActionResult> GetAttendanceByEvent(int eventId)
+        {
+            var data = await _context.Attendances
+                .Include(a => a.EventRegistration)
+                .ThenInclude(r => r.Event)
+                .Where(a => a.EventRegistration.EventId == eventId)
+                .ToListAsync();
+
+            return Ok(data);
+        }
+
+        // ===============================
+        // POST: api/attendance/mark-bulk
+        // Bulk attendance marking
+        // ===============================
+        [Authorize(Roles = "Admin")]
+        [HttpPost("mark-bulk")]
+        public async Task<IActionResult> MarkBulkAttendance(List<BulkAttendanceDto> data)
+        {
+            foreach (var item in data)
+            {
+                var exists = await _context.Attendances
+                    .AnyAsync(a => a.EventRegistrationId == item.EventRegistrationId);
+
+                if (!exists)
+                {
+                    var attendance = new Attendance
+                    {
+                        EventRegistrationId = item.EventRegistrationId,
+                        AttendanceStatus = item.AttendanceStatus,
+                        MarkedAt = DateTime.Now
+                    };
+
+                    _context.Attendances.Add(attendance);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Bulk attendance marked successfully");
+        }
+
+        // ===============================
+        // GET: api/attendance/event/{eventId}/summary
+        // Attendance summary report
+        // ===============================
+        [Authorize(Roles = "Admin")]
+        [HttpGet("event/{eventId}/summary")]
+        public async Task<IActionResult> GetAttendanceSummary(int eventId)
+        {
+            var totalRegistrations = await _context.EventRegistration
+                .CountAsync(r => r.EventId == eventId);
+
+            var present = await _context.Attendances
+                .Include(a => a.EventRegistration)
+                .CountAsync(a => a.EventRegistration.EventId == eventId && a.AttendanceStatus == "Present");
+
+            var absent = totalRegistrations - present;
+
+            return Ok(new
+            {
+                TotalRegistrations = totalRegistrations,
+                Present = present,
+                Absent = absent
+            });
+        }
+    }
+}

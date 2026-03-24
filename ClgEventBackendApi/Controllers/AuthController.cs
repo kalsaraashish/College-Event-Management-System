@@ -1,0 +1,149 @@
+﻿using BCrypt.Net;
+using ClgEventBackendApi.Models;
+using ClgEventBackendApi.Models.Auth;
+using ClgEventBackendApi.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace ClgEventBackendApi.Controllers
+{
+    [AllowAnonymous]
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AuthController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+        private readonly JwtService _jwtService;
+
+        public AuthController(AppDbContext context, JwtService jwtService)
+        {
+            _context = context;
+            _jwtService = jwtService;
+        }
+
+        // ======================================
+        // REGISTER
+        // ======================================
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(RegisterDto model)
+        {
+            var exists = await _context.Users
+                .AnyAsync(x => x.Email == model.Email);
+
+            if (exists)
+                return BadRequest("Email already exists");
+
+            var user = new User
+            {
+                Name = model.Name,
+                Email = model.Email,
+                Role = "Student",
+                Status = "Pending",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
+                CreatedAt = DateTime.Now
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Registration submitted. Wait for admin approval before registering for events.",
+                user.UserId,
+                user.Name,
+                user.Email,
+                user.Role,
+                user.Status,
+                HasStudentProfile = false
+            });
+        }
+
+        // ======================================
+        // LOGIN
+        // ======================================
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginModel model)
+        {
+            var user = await _context.Users
+                .Include(x => x.Student)
+                .FirstOrDefaultAsync(x => x.Email == model.Email);
+
+            if (user == null)
+                return Unauthorized("Invalid email");
+
+            bool passwordValid = false;
+            try
+            {
+                passwordValid = BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash);
+            }
+            catch (BCrypt.Net.SaltParseException)
+            {
+                // This happens if the password in the database is not securely hashed (e.g. plain text)
+                return Unauthorized("Invalid password format in database. Please register a new user or reset your password.");
+            }
+
+            if (!passwordValid)
+                return Unauthorized("Invalid password");
+
+            // Generate JWT Token
+            var token = _jwtService.GenerateToken(user.UserId, user.Email, user.Role);
+
+            return Ok(new
+            {
+                token = token,
+                user = new
+                {
+                    user.UserId,
+                    user.Name,
+                    user.Email,
+                    user.Role,
+                    user.Status,
+                    HasStudentProfile = user.Student != null
+                }
+            });
+        }
+
+        // ======================================
+        // CHANGE PASSWORD
+        // ======================================
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
+        {
+            var user = await _context.Users.FindAsync(model.UserId);
+
+            if (user == null)
+                return NotFound("User not found");
+
+            bool valid = BCrypt.Net.BCrypt.Verify(model.OldPassword, user.PasswordHash);
+
+            if (!valid)
+                return BadRequest("Old password incorrect");
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Password changed successfully");
+        }
+
+        // ======================================
+        // RESET PASSWORD
+        // ======================================
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(x => x.Email == model.Email);
+
+            if (user == null)
+                return NotFound("User not found");
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Password reset successfully");
+        }
+    }
+}

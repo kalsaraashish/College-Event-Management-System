@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sidebar-width: 260px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0d0f1a;
+  color: #e2e6f3;
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #13162b;
+}
+::-webkit-scrollbar-thumb {
+  background: #252b4a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4f54ea;
+}
+
+/* Glass card effect */
+.glass {
+  background: rgba(25, 29, 54, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(99, 114, 245, 0.12);
+}
+
+.glass-light {
+  background: rgba(37, 43, 74, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(99, 114, 245, 0.08);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #6272f5 0%, #06d6c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Neon glow */
+.glow-brand {
+  box-shadow: 0 0 20px rgba(99, 114, 245, 0.3);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(6, 214, 199, 0.3);
+}
+
+/* Input styles */
+.input-dark {
+  @apply w-full bg-surface-3 border border-brand-800/40 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all duration-200;
+}
+
+.btn-primary {
+  @apply bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-all duration-200 active:scale-95 shadow-lg shadow-brand-900/40;
+}
+
+.btn-secondary {
+  @apply bg-surface-3 hover:bg-surface-4 text-gray-200 font-medium rounded-xl px-5 py-2.5 text-sm transition-all duration-200 active:scale-95 border border-brand-800/30;
+}
+
+.btn-danger {
+  @apply bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-medium rounded-xl px-5 py-2.5 text-sm transition-all duration-200 active:scale-95 border border-rose-500/20;
+}
+
+/* Card */
+.card {
+  @apply bg-surface-1 rounded-2xl border border-brand-900/40 p-6;
+}
+
+/* Table */
+.table-dark {
+  @apply w-full text-sm;
+}
+.table-dark thead th {
+  @apply text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 bg-surface-2 first:rounded-l-xl last:rounded-r-xl;
+}
+.table-dark tbody tr {
+  @apply border-b border-surface-3 hover:bg-surface-2/50 transition-colors duration-150;
+}
+.table-dark tbody td {
+  @apply px-4 py-3 text-gray-300;
+}
+
+/* Badge */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+/* Sidebar nav item */
+.nav-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-surface-3 transition-all duration-200 cursor-pointer;
+}
+.nav-item.active {
+  @apply text-white bg-brand-600/20 border border-brand-500/20 text-brand-300;
+}
+
+/* Skeleton loader */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #13162b 25%, #1f2440 50%, #13162b 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
+/* Modal overlay */
+.modal-overlay {
+  @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+}
+
+.modal-box {
+  @apply bg-surface-1 rounded-2xl border border-brand-800/40 shadow-2xl w-full max-w-lg animate-slide-up;
+}
