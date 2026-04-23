@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
       const redirectTo = userData.role === 'Admin'
         ? '/admin/dashboard'
         : userData.status === 'Approved' && !userData.hasStudentProfile
-          ? '/student/complete-profile'
+          ? '/student/profile'
           : '/student/dashboard'
 
       return { success: true, role: userData.role, redirectTo, user: userData }
@@ -109,6 +109,19 @@ export function AuthProvider({ children }) {
     return res
   }, [persistUser, user])
 
+  const updateStudentProfile = useCallback(async (data) => {
+    const res = await studentService.updateProfile(data)
+    setStudentProfile(res.data)
+    if (user) {
+      persistUser({
+        ...user,
+        name: res.data?.name ?? user.name,
+        email: res.data?.email ?? user.email,
+      })
+    }
+    return res
+  }, [persistUser, user])
+
   const isAdmin = user?.role === 'Admin'
   const isStudent = user?.role === 'Student'
 
@@ -123,6 +136,7 @@ export function AuthProvider({ children }) {
       register,
       logout,
       completeStudentProfile,
+      updateStudentProfile,
       isAdmin,
       isStudent,
       isAuthenticated: !!token,

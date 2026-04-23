@@ -54,7 +54,21 @@ export default function StudentEvents() {
   useEffect(() => {
     Promise.all([eventService.getAll(), categoryService.getAll()])
       .then(([evRes, catRes]) => {
-        const eventList = evRes.data || []
+        let eventList = evRes.data || []
+
+        // Sort: Upcoming events first, then past events
+        const now = new Date()
+        eventList.sort((a, b) => {
+          const dateA = new Date(a.eventDate)
+          const dateB = new Date(b.eventDate)
+          const isAUpcoming = dateA > now
+          const isBUpcoming = dateB > now
+
+          if (isAUpcoming && !isBUpcoming) return -1
+          if (!isAUpcoming && isBUpcoming) return 1
+          return dateA - dateB // Ascending order within the same group
+        })
+
         setEvents(eventList)
         setCategories(catRes.data || [])
 
@@ -119,7 +133,7 @@ export default function StudentEvents() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input className="input-dark pl-10" placeholder="Search events..."
+          <input className="input-dark !pl-8" placeholder="Search events..."
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <select className="input-dark max-w-[160px]" value={filterType} onChange={e => setFilterType(e.target.value)}>
@@ -165,64 +179,64 @@ export default function StudentEvents() {
             const isFull = hasCapacityLimit && registrationCount >= showDetail.maxParticipants
 
             return (
-          <div className="space-y-5">
-            <div>
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <h2 className="font-display font-bold text-xl text-white">{showDetail.title}</h2>
-                <Badge>{showDetail.eventType}</Badge>
-              </div>
-              {showDetail.description && (
-                <p className="text-sm text-gray-400 leading-relaxed">{showDetail.description}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                ['📅 Date', formatDateTime(showDetail.eventDate)],
-                ['📍 Location', showDetail.location || 'TBA'],
-                ['👥 Max Participants', showDetail.maxParticipants || '∞'],
-                ['✅ Registered', `${registrationCount} students`],
-              ].map(([label, val]) => (
-                <div key={label} className="bg-surface-2 rounded-xl p-3">
-                  <p className="text-xs text-gray-500">{label}</p>
-                  <p className="font-medium text-white text-sm mt-0.5">{val}</p>
+              <div className="space-y-5">
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h2 className="font-display font-bold text-xl text-white">{showDetail.title}</h2>
+                    <Badge>{showDetail.eventType}</Badge>
+                  </div>
+                  {showDetail.description && (
+                    <p className="text-sm text-gray-400 leading-relaxed">{showDetail.description}</p>
+                  )}
                 </div>
-              ))}
-            </div>
 
-            {/* Availability bar */}
-            {hasCapacityLimit && (
-              <div>
-                <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-                  <span>Capacity</span>
-                  <span>{registrationCount}/{showDetail.maxParticipants}</span>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    ['👤 Organizer', showDetail.organizerName || 'Admin'],
+                    ['📅 Date', formatDateTime(showDetail.eventDate)],
+                    ['📍 Location', showDetail.location || 'TBA'],
+                    ['👥 Max Participants', showDetail.maxParticipants || '∞'],
+                    ['✅ Registered', `${registrationCount} students`],
+                  ].map(([label, val]) => (
+                    <div key={label} className="bg-surface-2 rounded-xl p-3">
+                      <p className="text-xs text-gray-500">{label}</p>
+                      <p className="font-medium text-white text-sm mt-0.5">{val}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="w-full bg-surface-3 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${
-                      (registrationCount / showDetail.maxParticipants) > 0.9
-                        ? 'bg-rose-500' : 'bg-brand-500'
-                    }`}
-                    style={{ width: `${Math.min(100, (registrationCount / showDetail.maxParticipants) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            )}
 
-            {isUpcoming && !isFull ? (
-              <button
-                onClick={() => handleRegister(showDetail)}
-                disabled={registering}
-                className="btn-primary w-full flex items-center justify-center gap-2"
-              >
-                {registering ? <><Loader2 size={16} className="animate-spin" /> Registering...</> : '🎯 Register for This Event'}
-              </button>
-            ) : (
-              <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-center text-sm text-rose-400">
-                {!isUpcoming ? 'This event has already passed' : 'This event is full'}
+                {/* Availability bar */}
+                {hasCapacityLimit && (
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                      <span>Capacity</span>
+                      <span>{registrationCount}/{showDetail.maxParticipants}</span>
+                    </div>
+                    <div className="w-full bg-surface-3 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${(registrationCount / showDetail.maxParticipants) > 0.9
+                            ? 'bg-rose-500' : 'bg-brand-500'
+                          }`}
+                        style={{ width: `${Math.min(100, (registrationCount / showDetail.maxParticipants) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {isUpcoming && !isFull ? (
+                  <button
+                    onClick={() => handleRegister(showDetail)}
+                    disabled={registering}
+                    className="btn-primary w-full flex items-center justify-center gap-2"
+                  >
+                    {registering ? <><Loader2 size={16} className="animate-spin" /> Registering...</> : '🎯 Register for This Event'}
+                  </button>
+                ) : (
+                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-center text-sm text-rose-400">
+                    {!isUpcoming ? 'This event has already passed' : 'This event is full'}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
             )
           })()
         )}

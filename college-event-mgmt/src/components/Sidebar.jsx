@@ -7,10 +7,11 @@ import {
 
 const adminNav = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/admin/pending-students', icon: Users, label: 'Pending Students' },
+  { to: '/admin/approve-users', icon: Users, label: 'Approve Accounts' },
   { to: '/admin/events', icon: Calendar, label: 'Events' },
   { to: '/admin/categories', icon: Tag, label: 'Categories' },
   { to: '/admin/students', icon: GraduationCap, label: 'Students' },
+  { to: '/admin/organizers', icon: Users, label: 'Organizers' },
   { to: '/admin/attendance', icon: ClipboardCheck, label: 'Attendance' },
   { to: '/admin/notifications', icon: Bell, label: 'Notifications' },
   { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
@@ -20,12 +21,21 @@ const studentNav = [
   { to: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/student/events', icon: Calendar, label: 'Browse Events' },
   { to: '/student/my-events', icon: BookOpen, label: 'My Registrations' },
+  { to: '/student/profile', icon: Users, label: 'My Profile' },
+]
+
+const organizerNav = [
+  { to: '/organizer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/organizer/events', icon: Calendar, label: 'Manage Events' },
+  { to: '/organizer/registrations', icon: Users, label: 'Registrations' },
+  { to: '/organizer/attendance', icon: ClipboardCheck, label: 'Attendance' },
+  { to: '/organizer/notifications', icon: Bell, label: 'Notifications' },
 ]
 
 export default function Sidebar({ open, onClose }) {
   const { user, logout, isAdmin } = useAuth()
   const navigate = useNavigate()
-  const navItems = isAdmin ? adminNav : studentNav
+  const navItems = user?.role === 'Admin' ? adminNav : user?.role === 'Organizer' ? organizerNav : studentNav
 
   const handleLogout = () => {
     logout()
@@ -58,7 +68,7 @@ export default function Sidebar({ open, onClose }) {
             <div>
               <p className="font-display font-bold text-sm text-white leading-none">CollegeEvents</p>
               <p className="text-[10px] text-gray-500 font-mono mt-0.5">
-                {isAdmin ? 'Admin Portal' : 'Student Portal'}
+                {user?.role === 'Admin' ? 'Admin Portal' : user?.role === 'Organizer' ? 'Organizer Portal' : 'Student Portal'}
               </p>
             </div>
           </div>

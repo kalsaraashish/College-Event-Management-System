@@ -8,7 +8,7 @@ export default function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({
-    name: '', email: '', password: '', confirmPassword: ''
+    name: '', email: '', password: '', confirmPassword: '', role: 'Student'
   })
   const [showPwd, setShowPwd] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -24,7 +24,7 @@ export default function Register() {
     setLoading(true)
     const result = await register({
       name: form.name, email: form.email,
-      password: form.password
+      password: form.password, role: form.role
     })
     setLoading(false)
     if (result.success) {
@@ -94,6 +94,20 @@ export default function Register() {
                 <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input type="password" placeholder="Repeat password" className="input-dark !pl-8"
                   value={form.confirmPassword} onChange={set('confirmPassword')} required />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Account Role</label>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <label className={`cursor-pointer flex items-center justify-center p-2 rounded-lg border text-sm font-medium transition-colors ${form.role === 'Student' ? 'border-brand-500 bg-brand-500/20 text-white' : 'border-gray-700 bg-surface-1 text-gray-400 hover:bg-surface-2'}`}>
+                  <input type="radio" name="role" value="Student" checked={form.role === 'Student'} onChange={set('role')} className="hidden" />
+                  Student
+                </label>
+                <label className={`cursor-pointer flex items-center justify-center p-2 rounded-lg border text-sm font-medium transition-colors ${form.role === 'Organizer' ? 'border-brand-500 bg-brand-500/20 text-white' : 'border-gray-700 bg-surface-1 text-gray-400 hover:bg-surface-2'}`}>
+                  <input type="radio" name="role" value="Organizer" checked={form.role === 'Organizer'} onChange={set('role')} className="hidden" />
+                  Organizer
+                </label>
               </div>
             </div>
 

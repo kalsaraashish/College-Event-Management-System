@@ -1,7 +1,8 @@
-﻿using ClgEventBackendApi.Models;
+using ClgEventBackendApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClgEventBackendApi.Controllers
 {
@@ -21,7 +22,19 @@ namespace ClgEventBackendApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetNotifications()
         {
-            var notifications = await _context.Notifications
+            var query = _context.Notifications.AsQueryable();
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    query = query.Where(n => !n.EventId.HasValue || _context.Events.Any(e => e.EventId == n.EventId.Value && e.OrganizerId == userId));
+                }
+            }
+
+            var notifications = await query
                 .Select(n => new
                 {
                     n.NotificationId,
@@ -40,9 +53,26 @@ namespace ClgEventBackendApi.Controllers
         }
 
         // POST: api/notifications
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpPost]
         public async Task<IActionResult> CreateNotification(Notification notification)
         {
+            if (notification.EventId.HasValue)
+            {
+                var eventData = await _context.Events.FindAsync(notification.EventId.Value);
+                if (eventData == null) return NotFound("Event not found");
+
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                if (userRole == "Organizer")
+                {
+                    var userIdStr = User.FindFirst("UserId")?.Value;
+                    if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                    {
+                        if (eventData.OrganizerId != userId) return Forbid();
+                    }
+                }
+            }
+
             notification.CreatedAt = DateTime.Now;
 
             _context.Notifications.Add(notification);
@@ -72,6 +102,7 @@ namespace ClgEventBackendApi.Controllers
         }
 
         // DELETE: api/notifications/{id}
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNotification(int id)
         {
@@ -79,6 +110,23 @@ namespace ClgEventBackendApi.Controllers
 
             if (notification == null)
                 return NotFound();
+
+            if (notification.EventId.HasValue)
+            {
+                var eventData = await _context.Events.FindAsync(notification.EventId.Value);
+                if (eventData != null)
+                {
+                    var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                    if (userRole == "Organizer")
+                    {
+                        var userIdStr = User.FindFirst("UserId")?.Value;
+                        if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                        {
+                            if (eventData.OrganizerId != userId) return Forbid();
+                        }
+                    }
+                }
+            }
 
             _context.Notifications.Remove(notification);
             await _context.SaveChangesAsync();

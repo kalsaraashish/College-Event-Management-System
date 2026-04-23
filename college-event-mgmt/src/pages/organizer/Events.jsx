@@ -125,7 +125,7 @@ export default function AdminEvents() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input className="input-dark !pl-8" placeholder="Search events..."
+          <input className="input-dark pl-10" placeholder="Search events..."
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <select className="input-dark max-w-[180px]" value={filterType} onChange={e => setFilterType(e.target.value)}>

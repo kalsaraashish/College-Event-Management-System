@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
 namespace ClgEventBackendApi.Models
 {
@@ -33,6 +33,11 @@ namespace ClgEventBackendApi.Models
         // 🔹 Navigation
         [ForeignKey("CategoryId")]
         public Category? Category { get; set; }
+
+        public int? OrganizerId { get; set; }
+
+        [ForeignKey("OrganizerId")]
+        public User? Organizer { get; set; }
 
         // Navigation Properties
         public ICollection<EventRegistration>? EventRegistrations { get; set; }

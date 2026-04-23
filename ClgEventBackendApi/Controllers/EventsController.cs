@@ -1,7 +1,8 @@
-﻿using ClgEventBackendApi.Models;
+using ClgEventBackendApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClgEventBackendApi.Controllers
 {
@@ -21,7 +22,19 @@ namespace ClgEventBackendApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetEvent()
         {
-            var events = await _context.Events
+            var query = _context.Events.AsQueryable();
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    query = query.Where(e => e.OrganizerId == userId);
+                }
+            }
+
+            var events = await query
                 .OrderBy(e => e.EventDate)
                 .Select(e => new
                 {
@@ -35,6 +48,7 @@ namespace ClgEventBackendApi.Controllers
                     e.CreatedAt,
                     e.CategoryId,
                     CategoryName = e.Category != null ? e.Category.CategoryName : null,
+                    OrganizerName = e.Organizer != null ? e.Organizer.Name : "Admin",
                     RegistrationCount = _context.EventRegistration.Count(r => r.EventId == e.EventId && r.Status != "Cancelled")
                 })
                 .ToListAsync();
@@ -60,6 +74,7 @@ namespace ClgEventBackendApi.Controllers
                     e.CreatedAt,
                     e.CategoryId,
                     CategoryName = e.Category != null ? e.Category.CategoryName : null,
+                    OrganizerName = e.Organizer != null ? e.Organizer.Name : "Admin",
                     RegistrationCount = _context.EventRegistration.Count(r => r.EventId == e.EventId && r.Status != "Cancelled")
                 })
                 .FirstOrDefaultAsync();
@@ -70,8 +85,8 @@ namespace ClgEventBackendApi.Controllers
             return Ok(eventid);
         }
 
-        // ADMIN ONLY
-        [Authorize(Roles = "Admin")]
+        // ADMIN + ORGANIZER
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpPost]
         public async Task<IActionResult> AddEvent([FromBody] Event eventObj)
         {
@@ -81,6 +96,16 @@ namespace ClgEventBackendApi.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    eventObj.OrganizerId = userId;
+                }
+            }
+
             eventObj.CreatedAt = DateTime.Now;
 
             _context.Events.Add(eventObj);
@@ -89,8 +114,8 @@ namespace ClgEventBackendApi.Controllers
             return CreatedAtAction(nameof(GetEventById), new { id = eventObj.EventId }, eventObj);
         }
 
-        // ADMIN ONLY
-        [Authorize(Roles = "Admin")]
+        // ADMIN + ORGANIZER
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateEvent(int id, Event ev)
         {
@@ -100,8 +125,25 @@ namespace ClgEventBackendApi.Controllers
             if (id != ev.EventId)
                 return BadRequest("ID mismatch");
 
-            if (!await _context.Events.AnyAsync(p => p.EventId == id))
+            var existingEvent = await _context.Events.AsNoTracking().FirstOrDefaultAsync(p => p.EventId == id);
+            if (existingEvent == null)
                 return NotFound();
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    if (existingEvent.OrganizerId != userId)
+                        return Forbid();
+                    ev.OrganizerId = userId; // retain owner
+                }
+            }
+            else
+            {
+                ev.OrganizerId = existingEvent.OrganizerId; // retain previous owner when modified by admin
+            }
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -112,8 +154,8 @@ namespace ClgEventBackendApi.Controllers
             return Ok(ev);
         }
 
-        // ADMIN ONLY
-        [Authorize(Roles = "Admin")]
+        // ADMIN + ORGANIZER
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Deleteevent(int id)
         {
@@ -123,6 +165,17 @@ namespace ClgEventBackendApi.Controllers
 
             if (delid == null)
                 return NotFound();
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    if (delid.OrganizerId != userId)
+                        return Forbid();
+                }
+            }
 
             _context.Events.Remove(delid);
             await _context.SaveChangesAsync();
@@ -149,6 +202,7 @@ namespace ClgEventBackendApi.Controllers
                     e.CreatedAt,
                     e.CategoryId,
                     CategoryName = e.Category != null ? e.Category.CategoryName : null,
+                    OrganizerName = e.Organizer != null ? e.Organizer.Name : "Admin",
                     RegistrationCount = _context.EventRegistration.Count(r => r.EventId == e.EventId && r.Status != "Cancelled")
                 })
                 .ToListAsync();
@@ -188,6 +242,7 @@ namespace ClgEventBackendApi.Controllers
                     e.CreatedAt,
                     e.CategoryId,
                     CategoryName = e.Category != null ? e.Category.CategoryName : null,
+                    OrganizerName = e.Organizer != null ? e.Organizer.Name : "Admin",
                     RegistrationCount = _context.EventRegistration.Count(r => r.EventId == e.EventId && r.Status != "Cancelled")
                 })
                 .ToList();
@@ -215,6 +270,7 @@ namespace ClgEventBackendApi.Controllers
                     e.CreatedAt,
                     e.CategoryId,
                     CategoryName = e.Category != null ? e.Category.CategoryName : null,
+                    OrganizerName = e.Organizer != null ? e.Organizer.Name : "Admin",
                     RegistrationCount = _context.EventRegistration.Count(r => r.EventId == e.EventId && r.Status != "Cancelled")
                 })
                 .ToListAsync();

@@ -10,19 +10,27 @@ import ResetPassword from './pages/ResetPassword'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
-import AdminPendingStudents from './pages/admin/PendingStudents'
+import AdminApproveUsers from './pages/admin/ApproveUsers'
 import AdminEvents from './pages/admin/Events'
 import AdminCategories from './pages/admin/Categories'
 import AdminStudents from './pages/admin/Students'
+import AdminOrganizers from './pages/admin/Organizers'
 import AdminAttendance from './pages/admin/Attendance'
 import AdminReports from './pages/admin/Reports'
 import AdminNotifications from './pages/admin/Notifications'
 
 // Student pages
 import StudentDashboard from './pages/student/Dashboard'
-import StudentCompleteProfile from './pages/student/CompleteProfile'
+import StudentProfile from './pages/student/Profile'
 import StudentEvents from './pages/student/Events'
 import StudentMyEvents from './pages/student/MyEvents'
+
+// Organizer pages
+import OrganizerDashboard from './pages/organizer/Dashboard'
+import OrganizerEvents from './pages/organizer/Events'
+import OrganizerRegistrations from './pages/organizer/Registrations'
+import OrganizerAttendance from './pages/organizer/Attendance'
+import OrganizerNotifications from './pages/organizer/Notifications'
 
 export default function App() {
   return (
@@ -39,10 +47,11 @@ export default function App() {
           <Route element={<ProtectedRoute requiredRole="Admin" />}>
             <Route element={<Layout />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/pending-students" element={<AdminPendingStudents />} />
+              <Route path="/admin/approve-users" element={<AdminApproveUsers />} />
               <Route path="/admin/events" element={<AdminEvents />} />
               <Route path="/admin/categories" element={<AdminCategories />} />
               <Route path="/admin/students" element={<AdminStudents />} />
+              <Route path="/admin/organizers" element={<AdminOrganizers />} />
               <Route path="/admin/users" element={<Navigate to="/admin/students" replace />} />
               <Route path="/admin/attendance" element={<AdminAttendance />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
@@ -54,9 +63,20 @@ export default function App() {
           <Route element={<ProtectedRoute requiredRole="Student" />}>
             <Route element={<Layout />}>
               <Route path="/student/dashboard" element={<StudentDashboard />} />
-              <Route path="/student/complete-profile" element={<StudentCompleteProfile />} />
+              <Route path="/student/profile" element={<StudentProfile />} />
               <Route path="/student/events" element={<StudentEvents />} />
               <Route path="/student/my-events" element={<StudentMyEvents />} />
+            </Route>
+          </Route>
+
+          {/* Organizer routes */}
+          <Route element={<ProtectedRoute requiredRole="Organizer" />}>
+            <Route element={<Layout />}>
+              <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+              <Route path="/organizer/events" element={<OrganizerEvents />} />
+              <Route path="/organizer/registrations" element={<OrganizerRegistrations />} />
+              <Route path="/organizer/attendance" element={<OrganizerAttendance />} />
+              <Route path="/organizer/notifications" element={<OrganizerNotifications />} />
             </Route>
           </Route>
 

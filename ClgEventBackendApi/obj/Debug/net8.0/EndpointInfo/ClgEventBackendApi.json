@@ -5,7 +5,7 @@
     "version": "1.0"
   },
   "paths": {
-    "/api/Admin/pending-students": {
+    "/api/Admin/pending-users": {
       "get": {
         "tags": [
           "Admin"
@@ -17,7 +17,7 @@
         }
       }
     },
-    "/api/Admin/approve-student/{userId}": {
+    "/api/Admin/approve-user/{userId}": {
       "put": {
         "tags": [
           "Admin"
@@ -1061,6 +1061,35 @@
             "description": "OK"
           }
         }
+      },
+      "put": {
+        "tags": [
+          "StudentProfile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudentProfileDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudentProfileDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudentProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/Students": {
@@ -1491,6 +1520,14 @@
           "category": {
             "$ref": "#/components/schemas/Category"
           },
+          "organizerId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "organizer": {
+            "$ref": "#/components/schemas/User"
+          },
           "eventRegistrations": {
             "type": "array",
             "items": {
@@ -1679,6 +1716,45 @@
               "$ref": "#/components/schemas/EventRegistration"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateStudentProfileDto": {
+        "required": [
+          "course",
+          "email",
+          "name",
+          "phone"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "format": "email"
+          },
+          "course": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "year": {
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "phone": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string"
           }
         },
         "additionalProperties": false

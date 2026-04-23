@@ -135,7 +135,7 @@ export default function Students() {
 
       <div className="relative max-w-sm">
         <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-        <input className="input-dark pl-10" placeholder="Search by name, enrollment, course..."
+        <input className="input-dark !pl-8" placeholder="Search by name, enrollment, course..."
           value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
@@ -229,6 +229,7 @@ export default function Students() {
             <FormField label="Role">
               <select className="input-dark" value={form.role} onChange={set('role')}>
                 <option value="Student">Student</option>
+                <option value="Organizer">Organizer</option>
                 <option value="Admin">Admin</option>
               </select>
             </FormField>

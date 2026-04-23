@@ -30,6 +30,29 @@ namespace ClgEventBackendApi.Controllers
             public string Phone { get; set; } = string.Empty;
         }
 
+        public class UpdateStudentProfileDto
+        {
+            [Required]
+            [MaxLength(50)]
+            public string Name { get; set; } = string.Empty;
+
+            [Required]
+            [MaxLength(50)]
+            [EmailAddress]
+            public string Email { get; set; } = string.Empty;
+
+            [Required]
+            [MaxLength(50)]
+            public string Course { get; set; } = string.Empty;
+
+            [Range(1, 10)]
+            public int Year { get; set; }
+
+            [Required]
+            [MaxLength(20)]
+            public string Phone { get; set; } = string.Empty;
+        }
+
         private readonly AppDbContext _context;
 
         public StudentProfileController(AppDbContext context)
@@ -80,6 +103,53 @@ namespace ClgEventBackendApi.Controllers
                 message = "Student profile completed successfully",
                 student.StudentId,
                 student.UserId,
+                student.EnrollmentNo,
+                student.Course,
+                student.Year,
+                student.Phone
+            });
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateProfile(UpdateStudentProfileDto model)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var student = await _context.Students
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.UserId == userId);
+            if (student == null)
+                return NotFound("Student profile not found");
+
+            if (student.User == null)
+                return NotFound("User not found");
+
+            var normalizedEmail = model.Email.Trim().ToLower();
+            var emailExists = await _context.Users
+                .AnyAsync(u => u.UserId != userId && u.Email.ToLower() == normalizedEmail);
+
+            if (emailExists)
+                return BadRequest("Email already exists");
+
+            student.User.Name = model.Name.Trim();
+            student.User.Email = normalizedEmail;
+
+            student.Course = model.Course;
+            student.Year = model.Year;
+            student.Phone = model.Phone;
+
+            _context.Students.Update(student);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Student profile updated successfully",
+                student.StudentId,
+                student.UserId,
+                student.User.Name,
+                student.User.Email,
                 student.EnrollmentNo,
                 student.Course,
                 student.Year,

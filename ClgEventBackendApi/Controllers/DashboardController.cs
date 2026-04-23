@@ -1,8 +1,9 @@
-﻿using ClgEventBackendApi.Models;
+using ClgEventBackendApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClgEventBackendApi.Controllers
 {
@@ -24,25 +25,40 @@ namespace ClgEventBackendApi.Controllers
             var today = DateTime.Today;
             var monthStart = new DateTime(today.Year, today.Month, 1);
 
-            var totalEvents = await _context.Events.CountAsync();
-            var totalRegistrations = await _context.EventRegistration.CountAsync();
-            var totalAttendance = await _context.Attendances.CountAsync();
-            var presentAttendance = await _context.Attendances
+            var queryEvents = _context.Events.AsQueryable();
+            var queryRegistrations = _context.EventRegistration.AsQueryable();
+            var queryAttendances = _context.Attendances.AsQueryable();
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    queryEvents = queryEvents.Where(e => e.OrganizerId == userId);
+                    queryRegistrations = queryRegistrations.Where(r => r.Event.OrganizerId == userId);
+                    queryAttendances = queryAttendances.Where(a => a.EventRegistration.Event.OrganizerId == userId);
+                }
+            }
+
+            var totalEvents = await queryEvents.CountAsync();
+            var totalRegistrations = await queryRegistrations.CountAsync();
+            var totalAttendance = await queryAttendances.CountAsync();
+            var presentAttendance = await queryAttendances
                 .CountAsync(a => a.AttendanceStatus == "Present");
 
             var result = new
             {
                 TotalEvents = totalEvents,
-                TotalStudents = await _context.Students.CountAsync(),
+                TotalStudents = await _context.Students.CountAsync(), // unchanged
                 TotalRegistrations = totalRegistrations,
                 TotalAttendance = totalAttendance,
 
-                ActiveEvents = await _context.Events.CountAsync(e => e.EventDate.Date == today),
-                UpcomingEvents = await _context.Events.CountAsync(e => e.EventDate.Date > today),
-                CompletedEvents = await _context.Events.CountAsync(e => e.EventDate.Date < today),
-                // There is no cancellation flag on Event yet, so keep this stable for UI.
+                ActiveEvents = await queryEvents.CountAsync(e => e.EventDate.Date == today),
+                UpcomingEvents = await queryEvents.CountAsync(e => e.EventDate.Date > today),
+                CompletedEvents = await queryEvents.CountAsync(e => e.EventDate.Date < today),
                 CancelledEvents = 0,
-                TotalCategories = await _context.Categories.CountAsync(),
+                TotalCategories = await _context.Categories.CountAsync(), // unchanged
 
                 AttendanceRate = totalAttendance == 0
                     ? 0
@@ -50,8 +66,8 @@ namespace ClgEventBackendApi.Controllers
                 AvgParticipants = totalEvents == 0
                     ? 0
                     : Math.Round((double)totalRegistrations / totalEvents, 2),
-                TotalDepartments = await _context.Departments.CountAsync(),
-                NewEventsThisMonth = await _context.Events.CountAsync(e => e.CreatedAt >= monthStart)
+                TotalDepartments = await _context.Departments.CountAsync(), // unchanged
+                NewEventsThisMonth = await queryEvents.CountAsync(e => e.CreatedAt >= monthStart)
             };
 
             return Ok(result);
@@ -62,7 +78,19 @@ namespace ClgEventBackendApi.Controllers
         {
             var today = DateTime.Today;
 
-            var events = await _context.Events
+            var queryEvents = _context.Events.AsQueryable();
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    queryEvents = queryEvents.Where(e => e.OrganizerId == userId);
+                }
+            }
+
+            var events = await queryEvents
                 .Where(e => e.EventDate.Date == today)
                 .ToListAsync();
 

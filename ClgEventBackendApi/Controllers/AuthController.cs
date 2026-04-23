@@ -1,4 +1,4 @@
-﻿using BCrypt.Net;
+using BCrypt.Net;
 using ClgEventBackendApi.Models;
 using ClgEventBackendApi.Models.Auth;
 using ClgEventBackendApi.Services;
@@ -34,11 +34,13 @@ namespace ClgEventBackendApi.Controllers
             if (exists)
                 return BadRequest("Email already exists");
 
+            string userRole = model.Role == "Organizer" ? "Organizer" : "Student";
+
             var user = new User
             {
                 Name = model.Name,
                 Email = model.Email,
-                Role = "Student",
+                Role = userRole,
                 Status = "Pending",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
                 CreatedAt = DateTime.Now
@@ -49,7 +51,7 @@ namespace ClgEventBackendApi.Controllers
 
             return Ok(new
             {
-                message = "Registration submitted. Wait for admin approval before registering for events.",
+                message = "Registration submitted. Wait for admin approval before accessing features.",
                 user.UserId,
                 user.Name,
                 user.Email,

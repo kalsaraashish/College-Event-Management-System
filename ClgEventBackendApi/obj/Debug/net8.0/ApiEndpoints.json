@@ -1,8 +1,8 @@
 [
   {
     "ContainingType": "ClgEventBackendApi.Controllers.AdminController",
-    "Method": "ApproveStudent",
-    "RelativePath": "api/Admin/approve-student/{userId}",
+    "Method": "ApproveUser",
+    "RelativePath": "api/Admin/approve-user/{userId}",
     "HttpMethod": "PUT",
     "IsController": true,
     "Order": 0,
@@ -17,8 +17,8 @@
   },
   {
     "ContainingType": "ClgEventBackendApi.Controllers.AdminController",
-    "Method": "GetPendingStudents",
-    "RelativePath": "api/Admin/pending-students",
+    "Method": "GetPendingUsers",
+    "RelativePath": "api/Admin/pending-users",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -674,6 +674,22 @@
       {
         "Name": "model",
         "Type": "ClgEventBackendApi.Controllers.StudentProfileController\u002BCompleteStudentProfileDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ClgEventBackendApi.Controllers.StudentProfileController",
+    "Method": "UpdateProfile",
+    "RelativePath": "api/student/profile",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "ClgEventBackendApi.Controllers.StudentProfileController\u002BUpdateStudentProfileDto",
         "IsRequired": true
       }
     ],

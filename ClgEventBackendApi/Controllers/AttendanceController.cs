@@ -1,7 +1,8 @@
-﻿using ClgEventBackendApi.Models;
+using ClgEventBackendApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClgEventBackendApi.Controllers
 {
@@ -33,15 +34,26 @@ namespace ClgEventBackendApi.Controllers
         // POST: api/attendance
         // Mark attendance for one student
         // ===============================
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpPost]
         public async Task<IActionResult> MarkAttendance(MarkAttendanceDto attendance)
         {
             var registration = await _context.EventRegistration
-                .FindAsync(attendance.EventRegistrationId);
+                .Include(r => r.Event)
+                .FirstOrDefaultAsync(r => r.EventRegistrationId == attendance.EventRegistrationId);
 
             if (registration == null)
                 return BadRequest("Invalid Event Registration ID");
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    if (registration.Event.OrganizerId != userId) return Forbid();
+                }
+            }
 
             var exists = await _context.Attendances
                 .AnyAsync(a => a.EventRegistrationId == attendance.EventRegistrationId);
@@ -66,15 +78,27 @@ namespace ClgEventBackendApi.Controllers
         // PUT: api/attendance/{id}
         // Update attendance
         // ===============================
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateAttendance(int id, MarkAttendanceDto attendance)
         {
             var existing = await _context.Attendances
+                .Include(a => a.EventRegistration)
+                .ThenInclude(r => r.Event)
                 .FirstOrDefaultAsync(a => a.AttendanceId == id);
 
             if (existing == null)
                 return NotFound("Attendance record not found");
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    if (existing.EventRegistration.Event.OrganizerId != userId) return Forbid();
+                }
+            }
 
             if (attendance.EventRegistrationId > 0 && existing.EventRegistrationId != attendance.EventRegistrationId)
                 return BadRequest("Registration mismatch for attendance record");
@@ -90,12 +114,25 @@ namespace ClgEventBackendApi.Controllers
         // POST: api/attendance/mark-bulk
         // Mark attendance in bulk for an event
         // ===============================
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpPost("mark-bulk")]
         public async Task<IActionResult> MarkAttendanceBulk(BulkMarkAttendanceDto request)
         {
             if (request.EventId <= 0 || request.RegistrationIds == null || request.RegistrationIds.Count == 0)
                 return BadRequest("Event and registrations are required");
+
+            var eventData = await _context.Events.FindAsync(request.EventId);
+            if (eventData == null) return NotFound("Event not found");
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    if (eventData.OrganizerId != userId) return Forbid();
+                }
+            }
 
             var validRegistrationIds = await _context.EventRegistration
                 .Where(r => r.EventId == request.EventId && request.RegistrationIds.Contains(r.EventRegistrationId))
@@ -141,10 +178,23 @@ namespace ClgEventBackendApi.Controllers
         // GET: api/attendance/event/{eventId}
         // Get attendance by event
         // ===============================
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpGet("event/{eventId}")]
         public async Task<IActionResult> GetAttendanceByEvent(int eventId)
         {
+            var eventData = await _context.Events.FindAsync(eventId);
+            if (eventData == null) return NotFound("Event not found");
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    if (eventData.OrganizerId != userId) return Forbid();
+                }
+            }
+
             var data = await _context.Attendances
                 .Include(a => a.EventRegistration)
                 .ThenInclude(r => r.Event)
@@ -158,10 +208,23 @@ namespace ClgEventBackendApi.Controllers
         // GET: api/attendance/event/{eventId}/summary
         // Attendance summary for selected event
         // ===============================
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpGet("event/{eventId}/summary")]
         public async Task<IActionResult> GetAttendanceSummary(int eventId)
         {
+            var eventData = await _context.Events.FindAsync(eventId);
+            if (eventData == null) return NotFound("Event not found");
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    if (eventData.OrganizerId != userId) return Forbid();
+                }
+            }
+
             var totalRegistered = await _context.EventRegistration
                 .CountAsync(r => r.EventId == eventId && r.Status != "Cancelled");
 

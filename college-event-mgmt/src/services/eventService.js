@@ -42,6 +42,7 @@ export const studentService = {
   getById: (id) => api.get(`/Students/${id}`),
   getByUserId: (userId) => api.get(`/Students/user/${userId}`),
   completeProfile: (data) => api.post('/student/profile', data),
+  updateProfile: (data) => api.put('/student/profile', data),
   create: (data) => api.post('/Students', data),
   update: (id, data) => api.put(`/Students/${id}`, data),
   remove: (id) => api.delete(`/Students/${id}`),
@@ -56,8 +57,8 @@ export const userService = {
 }
 
 export const adminService = {
-  getPendingStudents: () => api.get('/Admin/pending-students'),
-  approveStudent: (userId) => api.put(`/Admin/approve-student/${userId}`),
+  getPendingUsers: () => api.get('/Admin/pending-users'),
+  approveUser: (userId) => api.put(`/Admin/approve-user/${userId}`),
 }
 
 export const notificationService = {

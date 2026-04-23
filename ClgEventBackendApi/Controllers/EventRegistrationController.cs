@@ -1,7 +1,8 @@
-﻿using ClgEventBackendApi.Models;
+using ClgEventBackendApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClgEventBackendApi.Controllers
 {
@@ -78,7 +79,7 @@ namespace ClgEventBackendApi.Controllers
             _context.Notifications.Add(new Notification
             {
                 Title = "New Event Registration",
-                Message = $"A student registered for '{eventData.Title}'.",
+                Message = $"Student '{studentProfile.User?.Name ?? "Unknown"}' registered for '{eventData.Title}'.",
                 EventId = eventData.EventId,
                 CreatedAt = DateTime.Now
             });
@@ -108,27 +109,54 @@ namespace ClgEventBackendApi.Controllers
         }
 
         // ===============================
-        // Admin: Get All Registrations
+        // Admin + Organizer: Get All Registrations
         // ===============================
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpGet]
         public async Task<IActionResult> GetAllRegistrations()
         {
-            var registrations = await _context.EventRegistration
+            var query = _context.EventRegistration
                 .Include(r => r.Event)
                 .Include(r => r.Student)
-                .ToListAsync();
+                .AsQueryable();
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    query = query.Where(r => r.Event.OrganizerId == userId);
+                }
+            }
+
+            var registrations = await query.ToListAsync();
 
             return Ok(registrations);
         }
 
         // ===============================
-        // Admin: Get Registrations by Event
+        // Admin + Organizer: Get Registrations by Event
         // ===============================
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer")]
         [HttpGet("event/{eventId}")]
         public async Task<IActionResult> GetRegistrationsByEvent(int eventId)
         {
+            var eventEntity = await _context.Events.FindAsync(eventId);
+            if (eventEntity == null)
+                return NotFound("Event not found");
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "Organizer")
+            {
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
+                {
+                    if (eventEntity.OrganizerId != userId)
+                        return Forbid();
+                }
+            }
+
             var regs = await _context.EventRegistration
                 .Where(r => r.EventId == eventId)
                 .Include(r => r.Student)

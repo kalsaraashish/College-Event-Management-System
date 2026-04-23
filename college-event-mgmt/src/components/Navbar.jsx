@@ -5,8 +5,6 @@ import { useNavigate } from 'react-router-dom'
 import { notificationService } from '../services/eventService'
 import toast from 'react-hot-toast'
 
-const LAST_SEEN_KEY = 'admin_notifications_last_seen_at'
-
 export default function Navbar({ onMenuClick }) {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -14,7 +12,7 @@ export default function Navbar({ onMenuClick }) {
 
   useEffect(() => {
     const loadNotificationCount = async () => {
-      if (user?.role !== 'Admin') {
+      if (user?.role !== 'Admin' && user?.role !== 'Organizer') {
         setNotificationCount(0)
         return
       }
@@ -22,7 +20,7 @@ export default function Navbar({ onMenuClick }) {
       try {
         const res = await notificationService.getAll()
         const notifications = res.data || []
-        const lastSeenAt = localStorage.getItem(LAST_SEEN_KEY)
+        const lastSeenAt = localStorage.getItem(`notifications_last_seen_${user?.role}`)
 
         if (!lastSeenAt) {
           setNotificationCount(notifications.length)
@@ -45,9 +43,9 @@ export default function Navbar({ onMenuClick }) {
   }, [user?.role])
 
   const handleOpenNotifications = () => {
-    localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString())
+    localStorage.setItem(`notifications_last_seen_${user?.role}`, new Date().toISOString())
     setNotificationCount(0)
-    navigate('/admin/notifications')
+    navigate(user?.role === 'Admin' ? '/admin/notifications' : '/organizer/notifications')
   }
 
   return (
@@ -74,7 +72,7 @@ export default function Navbar({ onMenuClick }) {
 
       {/* Right */}
       <div className="flex items-center gap-2">
-        {user?.role === 'Admin' && (
+        {(user?.role === 'Admin' || user?.role === 'Organizer') && (
           <button
             onClick={handleOpenNotifications}
             className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-white hover:bg-surface-3 transition-colors relative"

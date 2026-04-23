@@ -106,21 +106,15 @@ export default function Login() {
               Register here
             </Link>
           </p>
-          <p className="text-center text-xs text-gray-600 mt-2">
+          {/* <p className="text-center text-xs text-gray-600 mt-2">
             Need password help?{' '}
             <Link to="/reset-password" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
               Reset password
             </Link>
-          </p>
+          </p> */}
         </div>
 
-        {/* Demo hint */}
-        {/* <div className="mt-4 p-3 rounded-xl bg-surface-2/50 border border-brand-900/30 text-center">
-          <p className="text-xs text-gray-500">
-            <span className="text-brand-400 font-mono">Admin</span> or{' '}
-            <span className="text-accent-cyan font-mono">Student</span> role login
-          </p>
-        </div> */}
+        
       </div>
     </div>
   )
