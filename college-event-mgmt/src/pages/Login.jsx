@@ -106,12 +106,7 @@ export default function Login() {
               Register here
             </Link>
           </p>
-          {/* <p className="text-center text-xs text-gray-600 mt-2">
-            Need password help?{' '}
-            <Link to="/reset-password" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
-              Reset password
-            </Link>
-          </p> */}
+          
         </div>
 
         
